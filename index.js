@@ -24,6 +24,8 @@ async function run() {
     
     const db = client.db("loanlink");
     const loansCollection = db.collection("loans");
+    const usersCollection = db.collection("users");
+    const applicationsCollection = db.collection("applications");
     
     // Get loans with limit
     app.get('/loans', async (req, res) => {
@@ -39,6 +41,26 @@ async function run() {
       res.send(loan);
     });
     
+    // Create user
+    app.post('/users', async (req, res) => {
+      const user = req.body;
+      const result = await usersCollection.insertOne(user);
+      res.send(result);
+    });
+    
+    // Get user by email
+    app.get('/users/:email', async (req, res) => {
+      const user = await usersCollection.findOne({ email: req.params.email });
+      res.send(user);
+    });
+    
+    // Create loan application
+    app.post('/applications', async (req, res) => {
+      const application = req.body;
+      const result = await applicationsCollection.insertOne(application);
+      res.send(result);
+    });
+    
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
@@ -48,8 +70,6 @@ async function run() {
 run().catch(console.dir);
 
 
-
-//middleware
 
 app.use(cors());
 app.use(express.json());
