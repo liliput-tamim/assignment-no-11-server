@@ -1,5 +1,11 @@
 require('dotenv').config();
 const express = require('express');
+
+if (!process.env.STRIPE_SECRET_KEY || !process.env.MONGODB_URI) {
+  console.error('Error: Missing required environment variables. Check your .env file.');
+  process.exit(1);
+}
+
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const cors = require('cors');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
