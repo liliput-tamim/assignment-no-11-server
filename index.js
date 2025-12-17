@@ -213,6 +213,27 @@ async function run() {
 }
 run().catch(console.dir);
 
+// Set admin role endpoint
+app.patch('/users/set-admin/:email', async (req, res) => {
+  try {
+    const { MongoClient } = require('mongodb');
+    const client = new MongoClient(uri);
+    await client.connect();
+    const usersCollection = client.db("loanlink").collection("users");
+    
+    const result = await usersCollection.updateOne(
+      { email: req.params.email },
+      { $set: { role: 'admin' } },
+      { upsert: true }
+    );
+    
+    await client.close();
+    res.send({ success: true, message: 'Admin role set' });
+  } catch (error) {
+    res.status(500).send({ error: error.message });
+  }
+});
+
 app.get('/', (req, res) => {
   res.send('Hello World!')
 })
