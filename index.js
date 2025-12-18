@@ -2,9 +2,6 @@ require('dotenv').config();
 const express = require('express');
 const admin = require('firebase-admin');
 
-const decoded = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_KEY, 'base64').toString('utf8');
-const serviceAccount = JSON.parse(decoded);
-
 if (!process.env.STRIPE_SECRET_KEY || !process.env.MONGODB_URI) {
   console.error('Error: Missing required environment variables. Check your .env file.');
   process.exit(1);
@@ -12,16 +9,13 @@ if (!process.env.STRIPE_SECRET_KEY || !process.env.MONGODB_URI) {
 
 // Initialize Firebase Admin
 if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-  const serviceAccount = JSON.parse(Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_KEY, 'base64').toString());
+  const firebaseDecoded = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_KEY, 'base64').toString('utf8');
+  const firebaseServiceAccount = JSON.parse(firebaseDecoded);
   admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount)
+    credential: admin.credential.cert(firebaseServiceAccount)
   });
   console.log('Firebase Admin initialized');
 }
-// const serviceAccount = require("./firebase-admin-key.json");
-
-const decoded = Buffer.from(process.env.FB_SERVICE_KEY, 'base64').toString('utf8')
-const serviceAccount = JSON.parse(decoded);
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const cors = require('cors');
