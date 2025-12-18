@@ -93,6 +93,23 @@ async function run() {
       res.send(result);
     });
     
+    // Singular /user routes
+    app.get('/user', async (req, res) => {
+      const users = await usersCollection.find().toArray();
+      res.send(users);
+    });
+    
+    app.post('/user', async (req, res) => {
+      const user = req.body;
+      const result = await usersCollection.insertOne(user);
+      res.send(result);
+    });
+    
+    app.get('/user/:email', async (req, res) => {
+      const user = await usersCollection.findOne({ email: req.params.email });
+      res.send(user);
+    });
+    
     app.patch('/loans/:id', async (req, res) => {
       try {
         const updates = req.body;
