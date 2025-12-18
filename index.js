@@ -234,6 +234,76 @@ app.patch('/users/set-admin/:email', async (req, res) => {
   }
 });
 
+// Create Stripe checkout session
+app.post('/create-payment-session', async (req, res) => {
+  try {
+    const { applicationId } = req.body;
+    
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [{
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: 'Loan Application Fee',
+            description: 'Processing fee for loan application'
+          },
+          unit_amount: 1000, // $10.00
+        },
+        quantity: 1,
+      }],
+      mode: 'payment',
+      success_url: `http://localhost:5173/payment-success?session_id={CHECKOUT_SESSION_ID}&app_id=${applicationId}`,
+      cancel_url: `http://localhost:5173/dashboard/my-loans`,
+      metadata: {
+        applicationId: applicationId
+      }
+    });
+    
+    res.json({ sessionId: session.id, url: session.url });
+  } catch (error) {
+    res.status(500).send({ error: error.message });
+  }
+});
+
+// Verify payment and update application
+app.post('/verify-payment', async (req, res) => {
+  try {
+    const { sessionId, applicationId } = req.body;
+    
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    
+    if (session.payment_status === 'paid') {
+      const { MongoClient } = require('mongodb');
+      const client = new MongoClient(uri);
+      await client.connect();
+      const applicationsCollection = client.db("loanlink").collection("applications");
+      
+      await applicationsCollection.updateOne(
+        { _id: new ObjectId(applicationId) },
+        { 
+          $set: { 
+            applicationFeeStatus: 'paid',
+            paymentDetails: {
+              sessionId: sessionId,
+              amount: session.amount_total / 100,
+              currency: session.currency,
+              paidAt: new Date().toISOString()
+            }
+          } 
+        }
+      );
+      
+      await client.close();
+      res.json({ success: true, message: 'Payment verified and application updated' });
+    } else {
+      res.status(400).json({ success: false, message: 'Payment not completed' });
+    }
+  } catch (error) {
+    res.status(500).send({ error: error.message });
+  }
+});
+
 app.get('/', (req, res) => {
   res.send('Hello World!')
 })
